@@ -1,0 +1,23 @@
+# Compilados
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Secretos
+.env
+*.key
+
+# Logs
+logs/
+*.log
+
+# IDE / sistema
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+Thumbs.db
+.DS_Store
+node_modules/

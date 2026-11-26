@@ -1,0 +1,538 @@
+{
+  "info": {
+    "name": "Parcial ArquiSW - API HATEOAS v1/v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Raíz: descubrir la API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const links = pm.response.json()._links;",
+              "pm.test(\"Links a v1 y v2\", () => {",
+              "  pm.expect(links).to.have.property(\"v1-productos\");",
+              "  pm.expect(links).to.have.property(\"v1-ordenes\");",
+              "  pm.expect(links).to.have.property(\"v2-productos\");",
+              "});",
+              "pm.collectionVariables.set(\"v1Productos\", links[\"v1-productos\"].href);",
+              "pm.collectionVariables.set(\"v1Ordenes\", links[\"v1-ordenes\"].href.replace(\"{?estado}\", \"\"));",
+              "pm.collectionVariables.set(\"v2Productos\", links[\"v2-productos\"].href.split(\"{\")[0]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{baseUrl}}/api"
+      }
+    },
+    {
+      "name": "02 v1: listar productos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Encabezado X-API-Version = 1\", () => pm.response.to.have.header(\"X-API-Version\", \"1\"));",
+              "const json = pm.response.json();",
+              "pm.test(\"Colección HAL con _embedded y link crear\", () => {",
+              "  pm.expect(json._embedded.productos.length).to.be.above(0);",
+              "  pm.expect(json._links).to.have.property(\"crear\");",
+              "});",
+              "pm.test(\"Representación v1 sin campos de v2\", () => pm.expect(json._embedded.productos[0]).to.not.have.property(\"categoria\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{v1Productos}}"
+      }
+    },
+    {
+      "name": "03 v1: crear producto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Encabezado Location\", () => pm.response.to.have.header(\"Location\"));",
+              "const json = pm.response.json();",
+              "pm.test(\"Links self, actualizar, eliminar, version-2 y ordenar\", () => {",
+              "  [\"self\", \"actualizar\", \"eliminar\", \"version-2\", \"ordenar\"].forEach(r => pm.expect(json._links).to.have.property(r));",
+              "});",
+              "pm.collectionVariables.set(\"productoId\", json.id);",
+              "pm.collectionVariables.set(\"productoSelf\", json._links.self.href);",
+              "pm.collectionVariables.set(\"productoV2\", json._links[\"version-2\"].href);",
+              "pm.collectionVariables.set(\"ordenarUrl\", json._links.ordenar.href);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{v1Productos}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Producto Postman\",\n  \"descripcion\": \"Creado por la prueba\",\n  \"categoria\": \"Pruebas\",\n  \"precio\": 15000,\n  \"stock\": 10\n}"
+        }
+      }
+    },
+    {
+      "name": "04 v1: obtener producto (link self)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Mismo producto\", () => pm.expect(pm.response.json().nombre).to.eql(\"Producto Postman\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{productoSelf}}"
+      }
+    },
+    {
+      "name": "05 v1: actualizar producto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Precio actualizado\", () => pm.expect(pm.response.json().precio).to.eql(18000));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{productoSelf}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Producto Postman\",\n  \"descripcion\": \"Actualizado\",\n  \"categoria\": \"Pruebas\",\n  \"precio\": 18000,\n  \"stock\": 10\n}"
+        }
+      }
+    },
+    {
+      "name": "06 v2: mismo producto (link version-2)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Encabezado X-API-Version = 2\", () => pm.response.to.have.header(\"X-API-Version\", \"2\"));",
+              "const json = pm.response.json();",
+              "pm.test(\"Representación v2: precio con moneda e inventario\", () => {",
+              "  pm.expect(json.precio.moneda).to.eql(\"COP\");",
+              "  pm.expect(json.inventario.disponible).to.eql(true);",
+              "  pm.expect(json.categoria).to.eql(\"Pruebas\");",
+              "});",
+              "pm.test(\"Link de vuelta a v1\", () => pm.expect(json._links).to.have.property(\"version-1\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{productoV2}}"
+      }
+    },
+    {
+      "name": "07 v2: listar paginado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"Página de 3 con metadatos\", () => {",
+              "  pm.expect(json._embedded.productos.length).to.eql(3);",
+              "  pm.expect(json.page.size).to.eql(3);",
+              "});",
+              "pm.test(\"Links de navegación first/next/last\", () => [\"first\", \"next\", \"last\"].forEach(r => pm.expect(json._links).to.have.property(r)));",
+              "pm.test(\"Ordenado por precio descendente\", () => {",
+              "  const p = json._embedded.productos.map(x => x.precio.valor);",
+              "  pm.expect(p[0]).to.be.at.least(p[1]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{v2Productos}}?page=0&size=3&sort=precio,desc"
+      }
+    },
+    {
+      "name": "08 v2: filtrar por categoría",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Todos son de Tecnología\", () => pm.response.json()._embedded.productos.forEach(p => pm.expect(p.categoria).to.eql(\"Tecnología\")));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{v2Productos}}?categoria=Tecnología"
+      }
+    },
+    {
+      "name": "09 v1: crear orden (link ordenar)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test(\"Estado CREADA y total = precio x cantidad\", () => {",
+              "  pm.expect(json.estado).to.eql(\"CREADA\");",
+              "  pm.expect(json.total).to.eql(36000);",
+              "});",
+              "pm.test(\"HATEOAS: ofrece pagar y cancelar, no enviar\", () => {",
+              "  pm.expect(json._links).to.have.property(\"pagar\");",
+              "  pm.expect(json._links).to.have.property(\"cancelar\");",
+              "  pm.expect(json._links).to.not.have.property(\"enviar\");",
+              "});",
+              "pm.collectionVariables.set(\"pagarUrl\", json._links.pagar.href);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{ordenarUrl}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente\": \"Cliente Postman\",\n  \"productoId\": {{productoId}},\n  \"cantidad\": 2\n}"
+        }
+      }
+    },
+    {
+      "name": "10 v1: pagar orden (link pagar)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"Estado PAGADA\", () => pm.expect(json.estado).to.eql(\"PAGADA\"));",
+              "pm.test(\"HATEOAS: ahora ofrece enviar, ya no pagar\", () => {",
+              "  pm.expect(json._links).to.have.property(\"enviar\");",
+              "  pm.expect(json._links).to.not.have.property(\"pagar\");",
+              "});",
+              "pm.collectionVariables.set(\"enviarUrl\", json._links.enviar.href);",
+              "pm.collectionVariables.set(\"cancelarUrl\", json._links.cancelar.href);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{pagarUrl}}"
+      }
+    },
+    {
+      "name": "11 v1: enviar orden (link enviar)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"Estado ENVIADA y sin acciones\", () => {",
+              "  pm.expect(json.estado).to.eql(\"ENVIADA\");",
+              "  [\"pagar\", \"enviar\", \"cancelar\"].forEach(r => pm.expect(json._links).to.not.have.property(r));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{enviarUrl}}"
+      }
+    },
+    {
+      "name": "12 Error 409: cancelar orden enviada",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"409 Conflict\", () => pm.response.to.have.status(409));",
+              "pm.test(\"Problem Detail\", () => {",
+              "  pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/problem+json\");",
+              "  pm.expect(pm.response.json().detail).to.include(\"ENVIADA\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{cancelarUrl}}"
+      }
+    },
+    {
+      "name": "13 Error 400: producto inválido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"400 Bad Request\", () => pm.response.to.have.status(400));",
+              "pm.test(\"Detalle por campo\", () => {",
+              "  const e = pm.response.json().errores;",
+              "  pm.expect(e).to.have.property(\"nombre\");",
+              "  pm.expect(e).to.have.property(\"precio\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{v1Productos}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"\",\n  \"categoria\": \"X\",\n  \"precio\": -5,\n  \"stock\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "14 Error 404: producto inexistente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));",
+              "pm.test(\"Mensaje claro\", () => pm.expect(pm.response.json().detail).to.include(\"999999\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{v2Productos}}/999999"
+      }
+    },
+    {
+      "name": "15 Error 409: eliminar producto con órdenes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"409 Conflict\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/hal+json, application/problem+json"
+          }
+        ],
+        "url": "{{productoSelf}}"
+      }
+    },
+    {
+      "name": "16 Observabilidad: salud",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"UP\", () => pm.expect(pm.response.json().status).to.eql(\"UP\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "*/*"
+          }
+        ],
+        "url": "{{baseUrl}}/actuator/health"
+      }
+    },
+    {
+      "name": "17 Observabilidad: métricas Prometheus",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Métricas HTTP y de negocio\", () => {",
+              "  pm.expect(pm.response.text()).to.include(\"http_server_requests_seconds_count\");",
+              "  pm.expect(pm.response.text()).to.include(\"parcial_ordenes_total\");",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "*/*"
+          }
+        ],
+        "url": "{{baseUrl}}/actuator/prometheus"
+      }
+    }
+  ]
+}

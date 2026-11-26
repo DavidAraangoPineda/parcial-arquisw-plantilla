@@ -1,0 +1,84 @@
+# Todo el sistema con un solo comando:  docker compose up -d --build
+#
+#   API         http://localhost:8080/api            (Swagger: /swagger-ui.html)
+#   Grafana     http://localhost:3000                (admin / admin, dashboard "Parcial API")
+#   Prometheus  http://localhost:9090
+#   Loki        http://localhost:3100                (se consulta desde Grafana > Explore)
+#   PostgreSQL  solo red interna:  docker compose exec db psql -U parcial -d parcial
+
+name: parcial
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: parcial
+      POSTGRES_USER: ${DB_USER:-parcial}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-parcial}
+    # Sin puerto publicado: la API la alcanza por la red interna de Docker (db:5432) y así no
+    # choca con un PostgreSQL local ni con puertos reservados de Windows.
+    # Consola SQL:  docker compose exec db psql -U parcial -d parcial
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d parcial"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./api
+    image: parcial-api:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://db:5432/parcial
+      DB_USER: ${DB_USER:-parcial}
+      DB_PASSWORD: ${DB_PASSWORD:-parcial}
+      LOKI_URL: http://loki:3100/loki/api/v1/push
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      loki:
+        condition: service_started
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    volumes:
+      - ./observabilidad/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observabilidad/prometheus/alertas.yml:/etc/prometheus/alertas.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+
+  loki:
+    image: grafana/loki:3.5.0
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./observabilidad/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observabilidad/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+
+volumes:
+  db_data:
+  grafana_data:
