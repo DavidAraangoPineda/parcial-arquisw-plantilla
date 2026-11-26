@@ -2,7 +2,7 @@
 
 **Universidad de Antioquia · Arquitectura de Software**
 **Profesor:** Diego José Luis Botia Valderrama
-**Integrantes:** [nombre 1], [nombre 2], [nombre 3]
+**Estudiante:** David Arango Pineda
 **Fecha:** [fecha]
 **Repositorio:** [URL del repositorio en GitHub]
 
@@ -10,7 +10,7 @@
 
 ## 1. Enunciado
 
-[Copiar el problema asignado al grupo.]
+[Copiar el problema asignado.]
 
 ## 2. Solución propuesta
 

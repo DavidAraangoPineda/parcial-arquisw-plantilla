@@ -8,40 +8,42 @@ Viernes · Zoom a las **9:55 a. m.** · entrega máxima **1:00 p. m.** (3 horas)
 - [ ] `cd api; .\mvnw.cmd test` pasa (deja descargadas las dependencias de Maven).
 - [ ] `.\scripts\probar-api.ps1` pasa (deja Newman en la caché de npm).
 - [ ] Grafana muestra datos en el dashboard **Parcial API** después de `.\scripts\generar-trafico.ps1`.
-- [ ] Cada integrante clonó el repositorio y sabe qué le toca.
+- [ ] La plantilla del informe está abierta y sé cómo exportar Markdown a PDF (por ejemplo, la extensión *Markdown PDF* de VS Code).
 
-## Reparto sugerido del grupo
+## Trabajando solo: prioridades
 
-| Persona | Responsabilidad |
-|---|---|
-| A | Dominio: entidades, repositorios, servicios y reglas de negocio |
-| B | Web: controladores v1/v2, assemblers HATEOAS, colección Postman |
-| C | Docker y observabilidad, capturas de evidencia e informe |
+En 3 horas y sin equipo, lo importante es **entregar algo completo antes que algo perfecto**. La plantilla ya cumple todos los requisitos, así que el orden es:
+
+1. **Primero, que funcione con el dominio del enunciado**: renombrar entidades y campos, y que `docker compose up` siga arrancando. Con eso ya se cumple REST, HATEOAS, versionamiento, Docker y observabilidad.
+2. **Después, las evidencias**: capturas y el informe. Sin documento la entrega queda incompleta.
+3. **Solo si sobra tiempo**: reglas de negocio adicionales, más pruebas o más paneles en Grafana.
+
+Si a las 11:45 el dominio nuevo todavía no compila, entregar con lo que sí funciona y explicarlo en el informe.
 
 ## Plan de tiempo
 
 | Hora | Qué hacer |
 |---|---|
-| 9:55 – 10:15 | Leer el enunciado. Definir recursos, campos, estados y reglas. Decidir qué cambia en v2. Crear el repositorio de entrega (copia de esta plantilla) |
-| 10:15 – 11:15 | Adaptar el dominio y los controladores (ver lista abajo). Correr `mvnw test` cada vez que algo compile |
-| 11:15 – 11:45 | `docker compose up -d --build`, ajustar la colección Postman y correr `probar-api.ps1` |
-| 11:45 – 12:30 | Generar tráfico, tomar capturas, llenar `docs/INFORME.md` |
-| 12:30 – 12:50 | Exportar el informe a PDF, último `git push`, revisar que el repositorio se vea bien en GitHub |
-| 12:50 – 13:00 | Margen. **No dejar el push para el último minuto** |
-
-Hacer `git push` al menos cada hora, aunque no esté terminado.
+| 9:55 – 10:10 | Leer el enunciado. Anotar recursos, campos, estados y reglas. Decidir qué cambia en v2. Crear el repositorio de entrega |
+| 10:10 – 11:10 | Adaptar el dominio y los controladores (ver lista abajo). `mvnw test` cada vez que algo compile. **Push** |
+| 11:10 – 11:40 | `docker compose up -d --build`, ajustar la colección Postman y correr `probar-api.ps1`. **Push** |
+| 11:40 – 12:30 | Generar tráfico, tomar las capturas, llenar `docs/INFORME.md` |
+| 12:30 – 12:45 | Exportar el informe a PDF, subirlo al repositorio, último **push** y revisar en GitHub |
+| 12:45 – 13:00 | Margen. **No dejar el push para el último minuto** |
 
 ## Crear el repositorio de entrega
 
+Este repositorio está marcado como **plantilla** en GitHub, así que el de entrega se crea con una copia limpia, sin el historial:
+
 ```powershell
-# Copia limpia de la plantilla, con historial nuevo
-git clone https://github.com/DavidAraangoPineda/parcial-arquisw-plantilla.git parcial-final
-cd parcial-final
-Remove-Item -Recurse -Force .git
-git init -b main
-git add .; git commit -m "chore: estructura inicial desde la plantilla"
-gh repo create parcial-arquisw-final --private --source . --push   # o --public si lo pide el profesor
+cd C:\Users\frito\Documents\GitHub
+gh repo create parcial-arquisw-final --public --template DavidAraangoPineda/parcial-arquisw-plantilla --clone
+cd parcial-arquisw-final
 ```
+
+También se puede hacer desde la web: botón **Use this template** → **Create a new repository**.
+
+Antes de levantar el repositorio nuevo, apagar el de la plantilla para liberar los puertos: `docker compose down` en la carpeta de la plantilla.
 
 ## Adaptar al enunciado: qué archivos tocar
 
