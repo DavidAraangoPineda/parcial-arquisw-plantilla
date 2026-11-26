@@ -36,14 +36,14 @@ Si a las 11:45 el dominio nuevo todavía no compila, entregar con lo que sí fun
 Este repositorio está marcado como **plantilla** en GitHub, así que el de entrega se crea con una copia limpia, sin el historial:
 
 ```powershell
-cd C:\Users\frito\Documents\GitHub
-gh repo create parcial-arquisw-final --public --template DavidAraangoPineda/parcial-arquisw-plantilla --clone
-cd parcial-arquisw-final
+# Desde la carpeta de la plantilla: apaga sus contenedores, crea el repositorio, lo clona al lado
+# y copia las notas locales
+.\scripts\crear-repo-entrega.ps1 -Nombre parcial-arquisw-final
+cd ..\parcial-arquisw-final
+docker compose up -d --build
 ```
 
-También se puede hacer desde la web: botón **Use this template** → **Create a new repository**.
-
-Antes de levantar el repositorio nuevo, apagar el de la plantilla para liberar los puertos: `docker compose down` en la carpeta de la plantilla.
+También se puede hacer desde la web: botón **Use this template** → **Create a new repository**. En ese caso, apagar antes la plantilla con `docker compose down` para liberar los puertos.
 
 ## Adaptar al enunciado: qué archivos tocar
 
